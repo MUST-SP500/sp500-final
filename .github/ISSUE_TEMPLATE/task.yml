@@ -1,0 +1,58 @@
+name: 任务
+description: 创建一个可交付的任务（对应附录 A 的 D01–S04）
+title: "[B?] "
+labels: ["task"]
+body:
+  - type: dropdown
+    id: block
+    attributes:
+      label: 所属块
+      options:
+        - B1 数据与工程
+        - B2 EDA 与可视化
+        - B3 特征与防泄漏
+        - B4 传统 ML 与评测
+        - B5 PCA 与深度学习
+        - B6 回测与集成
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: 主责
+      placeholder: "@P1"
+    validations:
+      required: true
+
+  - type: input
+    id: due
+    attributes:
+      label: 截止日期
+      placeholder: "2026-12-01"
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 要做什么
+      description: 一句话说清交付物，不要写过程
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: 验收标准
+      description: 怎样算做完？要能被别人验证
+      placeholder: |
+        - 一条命令可重建
+        - 该测试通过
+        - 图表能由脚本生成
+    validations:
+      required: true
+
+  - type: textarea
+    id: depends
+    attributes:
+      label: 依赖
+      placeholder: "依赖 #12 完成后才能开始"

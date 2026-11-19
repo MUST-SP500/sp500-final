@@ -1,0 +1,36 @@
+# 全局配置：所有脚本都从这里读参数，不要在代码里写死数字
+project:
+  name: sp500-final
+  seed: 42
+
+data:
+  start: "1996-01-01"
+  end: "2025-12-31"
+  tickers:
+    spy: "SPY"      # 主标的：总收益合成价
+    gspc: "^GSPC"   # 交叉校验
+    vix: "^VIX"     # 情绪（使用时统一 shift(1)）
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  weekly_panel: "data/processed/weekly_panel.parquet"
+  splits: "data/processed/splits.json"
+
+split:
+  train_start: "1996-01-01"
+  val_start: "2006-01-01"    # 一次性选参窗口
+  val_end: "2007-12-31"
+  first_test_year: 2008
+  last_test_year: 2025
+  purge_weeks: 2             # 1 周标签 + 1 周缓冲
+  hyperparam_policy: "frozen_from_2006_2007"
+
+backtest:
+  frequency: "weekly"
+  position_rule: "long_cash"
+  cost_bps: 5.0              # 单边
+  initial_position: 0.0
+  initial_equity: 1.0
+  cash_source: "DTB3"
+
+logging:
+  level: "INFO"

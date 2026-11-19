@@ -1,0 +1,44 @@
+# CODEOWNERS 模板
+#
+# 用法（两步）：
+#   1. 把下面的 @P1 … @P6 换成每个人的真实 GitHub 用户名
+#   2. 把本文件改名为 CODEOWNERS（去掉 .example 后缀）
+#   然后到 Settings → Branches → 编辑 main 规则，勾上
+#   "Require review from Code Owners"
+#
+# 语法：<路径模式> <@用户名>
+# 越靠后的规则优先级越高。
+
+# 默认：任意改动都需要至少一位核心成员看
+*                       @P1 @P6
+
+# B1 数据与工程
+/src/data_download.py   @P1
+/src/data_clean.py      @P1
+/src/scrape_wiki.py     @P1
+/src/validate.py        @P1
+/data/                  @P1
+
+# B2 EDA 与可视化
+/src/plot_style.py      @P2
+/notebooks/01_eda.ipynb @P2
+
+# B3 特征与防泄漏
+/src/features.py        @P3
+/src/labels.py          @P3
+/src/splits.py          @P3
+/tests/test_leakage.py  @P3
+
+# B4 传统 ML 与评测
+/src/models_ml.py       @P4
+/src/evaluate.py        @P4
+/src/decision.py        @P4
+
+# B5 PCA 与深度学习
+/src/models_pca.py      @P5
+/src/models_dl.py       @P5
+
+# B6 回测与集成
+/src/backtest.py        @P6
+/src/pipeline.py        @P6
+/docs/preregistration.md @P6 @P3

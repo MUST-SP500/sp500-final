@@ -1,0 +1,14 @@
+# 版本锁在次版本号，避免组员环境漂移；答辩前请勿随意升级
+numpy>=1.26,<3
+pandas>=2.1,<3
+scikit-learn>=1.4,<2
+matplotlib>=3.8,<4
+pyyaml>=6.0,<7
+requests>=2.31,<3
+beautifulsoup4>=4.12,<5
+lxml>=5.0,<7
+pyarrow>=15.0,<22
+pytest>=8.0,<9
+
+# 可选：深度学习（B5 开工时再装，CPU 版即可）
+# torch>=2.2
