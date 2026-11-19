@@ -27,6 +27,12 @@
 - **理由**：先定接口再并行开发，避免最后一周集成冲突
 - **影响**：各块负责人只改自己目录下的文件
 
+### 2026-11-19 · 改用 uv 管理依赖与运行环境
+- **决定**：环境唯一真源改为 `pyproject.toml` + `uv.lock` + `.python-version`（Python 3.12），删除 `requirements.txt`；运行一律 `uv run`，加依赖一律 `uv add`
+- **理由**：课程《Final Project 開發與測試流程指南》要求用 `uv sync` 一条命令复现环境，`uv.lock` 是老师能复现的凭据；`pip install` 装的包不进 lock，会造成环境漂移
+- **影响**：全员需删除旧 `.venv` 后执行 `uv sync`；CI 改为 `astral-sh/setup-uv` + `uv sync --frozen`；README / CONTRIBUTING / 分工手册中的 pip 指令同步改写；**不影响** `src/` 任何接口、`config.yaml` 参数与预注册
+- **提出 / 确认**：熊泽睿 提出，G05 组会确认
+
 ---
 
 ## 待确认事项（组会解决）
