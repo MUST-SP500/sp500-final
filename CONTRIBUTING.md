@@ -4,14 +4,25 @@
 
 ## 1. 环境（第一次 5 分钟）
 
+依赖与 Python 版本由 `pyproject.toml` + `uv.lock` + `.python-version` 锁定，**不要用 `python -m venv` 和 `pip install`**。
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-pytest -q
+# 0. 装 uv（一次性）；Windows 在 PowerShell 里跑：
+#    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+uv sync                # 按 uv.lock 复现环境（自动建 .venv，含 dev 依赖）
+uv run pytest -q       # 应 45 passed, 3 skipped
 ```
 
-`pytest` 全绿 = 环境正确。红了先别看别人的代码，先看报错的第一行。
+`uv run pytest` 全绿 = 环境正确。红了先别看别人的代码，先看报错的第一行。
+
+**加依赖只走一条路**：`uv add 包名`（工具类用 `uv add --dev 包名`）。它会同时写 `pyproject.toml` 和 `uv.lock`，这两个文件必须一起提交。用 `pip install` 装的包不会进 lock，别人就复现不出来。
+
+运行任何脚本都用 `uv run`，不要用裸 `python`：
+
+```bash
+uv run python -m src.pipeline --check
+uv run python -m src.pipeline --config config.yaml
+```
 
 ## 2. 分支命名
 
@@ -43,7 +54,7 @@ git switch main && git pull
 git switch -c feat/b1-download
 
 # 2. 写代码 + 写测试 + 本地跑通
-pytest -q
+uv run pytest -q
 
 # 3. 提交、推送、开 PR
 git add -A
@@ -79,7 +90,7 @@ git push -u origin feat/b1-download
 一个任务算完成，必须同时满足：
 
 - [ ] 代码在 `src/` 里，不是只在 notebook 里
-- [ ] 有测试，且 `pytest -q` 通过
+- [ ] 有测试，且 `uv run pytest -q` 通过
 - [ ] PR 已被 review 并合并到 `main`
 - [ ] 相关文档（字典 / decisions）已更新
 - [ ] 别人 clone 下来能跑通
