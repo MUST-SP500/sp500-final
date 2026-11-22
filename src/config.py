@@ -28,7 +28,18 @@ def load_config(path: str | os.PathLike[str] | None = None) -> dict[str, Any]:
 
 
 # 运行期目录：git 不保存空目录，clone 下来可能缺失，需要时自动创建
-RUNTIME_DIRS = ["data/raw", "data/processed", "reports/figures", "notebooks", "slides"]
+RUNTIME_DIRS = [
+    "data/raw",
+    "data/raw/yahoo",
+    "data/raw/fred",
+    "data/raw/wiki",
+    "data/processed",
+    "reports/figures",
+    "notebooks",
+    "slides",
+    "output",
+    "output/figures",
+]
 
 
 def project_path(*parts: str) -> Path:

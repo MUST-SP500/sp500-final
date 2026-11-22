@@ -12,6 +12,7 @@
 rf 为现金周收益（按实际交易日数折算，见 2.3）；c 为单边成本（5 bps = 0.0005）。
 
 负责人：P6（B6）
+对应：SP500_分工说明书 P6 第 1–2 步
 """
 
 from __future__ import annotations

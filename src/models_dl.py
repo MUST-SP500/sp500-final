@@ -1,11 +1,11 @@
 """深度学习（B5）：DNN / 1D CNN / Autoencoder。
 
 负责人：P5（B5）
-对应计划：4.5
+对应：SP500_分工说明书 P5 第 2–5 步
 
 约束：
-  - 早停只用验证折，绝不用测试年
-  - 至少 3 个随机种子，报告均值 ± 标准差
+  - 早停只用本折训练段尾部 2 年，绝不用测试年
+  - 全折只用 1 个固定种子（一周工期，不做多种子方差；真的需要再单独说）
   - 参数量 <= 5,000（样本只有约 1,500 周，模型不能大）
   - 单次训练 > 5 分钟的超参组合直接移出搜索空间
   - 滚动窗口的最后一个观测值必须 <= 决策时点 t，且不跨 train/test 边界
@@ -32,5 +32,5 @@ def train_and_predict(model, X_train, y_train, X_val, y_val, X_test, epochs: int
 
 
 def autoencoder_bottleneck(X_train, X_val, bottleneck: int = 8):
-    """仅用于 3 个代表性折（2008 / 2018 / 2022），不做全 18 折。"""
-    raise NotImplementedError("B5：拉伸项，最后做（P5）")
+    """只在 2008 一个折上跑，用来和 PCA 做定性对比；不做全 18 折。"""
+    raise NotImplementedError("B5：待实现（P5），只跑 2008 一折")

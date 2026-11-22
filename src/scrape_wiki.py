@@ -1,7 +1,7 @@
 """Wikipedia 成分股爬虫（B1）：当前成分表 + 历史变更表。
 
 负责人：P1（B1）
-对应计划：4.1「爬虫」、知识点「data scrape」「正则」
+对应：SP500_分工说明书 P1 第 5 步（知识点：data scrape、正则）
 
 必须做到：
   - 抓取前检查 robots.txt，带明确 User-Agent，请求间隔 >= 1 秒

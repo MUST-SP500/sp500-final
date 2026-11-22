@@ -1,15 +1,17 @@
 """评测（B4）：预测层指标 + 策略层指标 + 配对 bootstrap。
 
 负责人：P4（B4）
-对应计划：4.6
+对应：SP500_分工说明书 P4 第 5–6 步
 
-必须报告：
-  预测层  Accuracy / Balanced Accuracy / Precision / Recall / F1 / ROC-AUC
-          Brier / LogLoss / 校准曲线 / 混淆矩阵（按测试年汇总）
-  策略层  CAGR / 年化波动 / Sharpe（超额）/ Sortino / MaxDD / Calmar
-          胜率 / 盈亏比 / 年换手 / 平均仓位 / Alpha / Beta / 信息比率
-  统计    block bootstrap（block=8 周, 5000 次）给 Sharpe 与 CAGR 的 95% CI
-          配对 bootstrap 给"策略 - 基准"的 Sharpe 差 CI
+本版口径（一周工期，指标是精简过的）：
+  预测层  AUC / Balanced Accuracy / F1 / Brier
+          回归：RMSE / MAE / Spearman IC / 方向准确率
+  策略层  CAGR / 年化波动 / Sharpe（超额）/ MaxDD（周频 + 日频）/ 年换手 / 平均仓位
+  统计    配对 bootstrap，给"策略 − 基准"的 Sharpe 差 95% CI
+  工程    训练/推理耗时、吞吐、峰值内存 → reports/perf.csv
+
+本版不做：校准曲线、分年混淆矩阵、LogLoss、Sortino/Calmar、单条策略的 CI
+（这些留着以后补，别现在花时间）。
 
 纪律：所有比较以"差值 + 置信区间"呈现，不做排行榜。
 """

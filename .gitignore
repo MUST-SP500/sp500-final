@@ -1,6 +1,7 @@
 # ---------- 数据（不进 git） ----------
-data/raw/*
-!data/raw/.gitkeep
+data/raw/**
+!data/raw/**/
+!data/raw/**/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
 *.parquet
@@ -17,6 +18,11 @@ env/
 .ruff_cache/
 .coverage
 htmlcov/
+
+# ---------- uv ----------
+# uv.lock 和 .python-version 必须提交，不要加进来
+.uv/
+uv-cache/
 
 # ---------- Notebook ----------
 .ipynb_checkpoints/

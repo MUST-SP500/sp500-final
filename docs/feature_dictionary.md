@@ -1,6 +1,6 @@
 # 特征字典（Feature Dictionary）
 
-22 个特征，**全部比率型**。冻结于 G1（D4）。
+22 个特征，**全部比率型**。口径冻结后不再改；要改先改本文件，再改 `src/features.py` 的 `FEATURE_GROUPS`。
 
 ## 硬性约束
 

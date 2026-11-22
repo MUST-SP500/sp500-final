@@ -6,31 +6,54 @@ project:
 data:
   start: "1996-01-01"
   end: "2025-12-31"
+
+  # 5 个标的。前三个走雅虎，后两个走 FRED 的 CSV 接口（见 sources）
   tickers:
-    spy: "SPY"      # 主标的：总收益合成价
-    gspc: "^GSPC"   # 交叉校验
-    vix: "^VIX"     # 情绪（使用时统一 shift(1)）
+    spy: "SPY"        # 主标的：总收益合成价
+    gspc: "^GSPC"     # 交叉校验（日收益相关性应 > 0.99）
+    vix: "^VIX"       # 恐慌指数（使用时统一 shift(1)）
+    dtb3: "DTB3"      # 3 个月国库券利率：空仓时的利息
+    dgs10: "DGS10"    # 10 年期国债利率：利率环境、期限利差
+
+  # 可选：官方总收益指数，用来对账 SPY 复权口径（逐年偏差应 < 0.3%）
+  # 拉不到就跳过这项检查，不影响主流程
+  cross_check:
+    sp500tr: "^SP500TR"
+
+  sources:
+    yahoo: ["SPY", "^GSPC", "^VIX"]
+    fred: ["DTB3", "DGS10"]
+
   raw_dir: "data/raw"
+  yahoo_dir: "data/raw/yahoo"
+  fred_dir: "data/raw/fred"
+  wiki_dir: "data/raw/wiki"
   processed_dir: "data/processed"
   weekly_panel: "data/processed/weekly_panel.parquet"
   splits: "data/processed/splits.json"
+  predictions: "data/processed/predictions.parquet"
 
 split:
   train_start: "1996-01-01"
-  val_start: "2006-01-01"    # 一次性选参窗口
+  val_start: "2006-01-01"    # 一次性选参窗口，只有这个窗口能用来调参
   val_end: "2007-12-31"
   first_test_year: 2008
   last_test_year: 2025
-  purge_weeks: 2             # 1 周标签 + 1 周缓冲
+  purge_weeks: 2             # 1 周标签跨度 + 1 周缓冲
   hyperparam_policy: "frozen_from_2006_2007"
 
 backtest:
   frequency: "weekly"
   position_rule: "long_cash"
-  cost_bps: 5.0              # 单边
+  cost_bps: 5.0              # 单边成本
+  cost_bps_sensitivity: 10.0 # 敏感性只用这一档
   initial_position: 0.0
   initial_equity: 1.0
   cash_source: "DTB3"
+
+report:
+  figures_dir: "reports/figures"
+  pages: 10                  # 报告页数上限（课程要求 5–15 页）
 
 logging:
   level: "INFO"

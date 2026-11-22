@@ -5,13 +5,16 @@
 ## 1. 环境（第一次 5 分钟）
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-pytest -q
+uv sync          # 按 .python-version 装 Python + 全部依赖，不用手动建虚拟环境
+uv run pytest    # 全绿 = 环境正确
 ```
 
-`pytest` 全绿 = 环境正确。红了先别看别人的代码，先看报错的第一行。
+没装 uv 的话先装一次（之后不用再管）：Windows 用 `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`，
+macOS / Linux 用 `curl -LsSf https://astral.sh/uv/install.sh | sh`。装完关掉终端重开。
+
+项目**只用 uv**，不要 `pip install`，也不要 `python -m venv`——混用会让 `uv.lock` 和实际环境对不上，别人就复现不了。
+
+`uv run pytest` 红了先别看别人的代码，先看报错的第一行。
 
 ## 2. 分支命名
 
@@ -43,7 +46,7 @@ git switch main && git pull
 git switch -c feat/b1-download
 
 # 2. 写代码 + 写测试 + 本地跑通
-pytest -q
+uv run pytest
 
 # 3. 提交、推送、开 PR
 git add -A
@@ -79,7 +82,7 @@ git push -u origin feat/b1-download
 一个任务算完成，必须同时满足：
 
 - [ ] 代码在 `src/` 里，不是只在 notebook 里
-- [ ] 有测试，且 `pytest -q` 通过
+- [ ] 有测试，且 `uv run pytest` 通过
 - [ ] PR 已被 review 并合并到 `main`
 - [ ] 相关文档（字典 / decisions）已更新
 - [ ] 别人 clone 下来能跑通
