@@ -30,6 +30,7 @@ data:
   wiki_dir: "data/raw/wiki"
   processed_dir: "data/processed"
   weekly_panel: "data/processed/weekly_panel.parquet"
+  daily_panel: "data/processed/daily_panel.parquet"   # 日频清洗结果（给特征工程用）
   splits: "data/processed/splits.json"
   predictions: "data/processed/predictions.parquet"
 
