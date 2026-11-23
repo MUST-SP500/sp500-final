@@ -22,6 +22,16 @@ import pandas as pd
 
 from src.config import load_config, project_path
 
+# 异常类型枚举（docs/variable_descriptions.md 第 6 节同步维护）
+ANOMALY_KINDS = (
+    "extreme_daily_return",
+    "extreme_weekly_return",
+    "zero_volume",
+    "stale_close",
+    "dividend_event",
+    "factor_drop",
+)
+
 EXTREME_DAILY = 0.20  # 单日 |收益| 超过 20% 视为极端
 EXTREME_WEEKLY = 0.15  # 单周 |收益| 超过 15% 视为极端
 STALE_RUN = 3  # 连续 >=3 个交易日收盘完全相同 → 疑似停牌或坏点
@@ -184,33 +194,33 @@ def build_report(cfg: dict, out_path=None, anomaly_path=None) -> Path:
     anomalies = []
     for _, r in extreme_d.iterrows():
         anomalies.append(
-            {"date": r["date"].date(), "kind": "extreme_daily_return", "value": round(r["value"], 6),
+            {"date": r["date"].date(), "kind": ANOMALY_KINDS[0], "value": round(r["value"], 6),
              "detail": f"日收益 {r['value']*100:.2f}%", "action": "保留（真实行情），建模阶段按需 winsorize"}
         )
     for _, r in extreme_w.iterrows():
         anomalies.append(
-            {"date": r["date"].date(), "kind": "extreme_weekly_return", "value": round(r["value"], 6),
+            {"date": r["date"].date(), "kind": ANOMALY_KINDS[1], "value": round(r["value"], 6),
              "detail": f"周收益 {r['value']*100:.2f}%", "action": "保留（真实行情）"}
         )
     for _, r in zero_vol.iterrows():
         anomalies.append(
-            {"date": pd.Timestamp(r["date"]).date(), "kind": "zero_volume", "value": 0,
+            {"date": pd.Timestamp(r["date"]).date(), "kind": ANOMALY_KINDS[2], "value": 0,
              "detail": "成交量为 0", "action": "保留（多为休市半天或数据源缺失）"}
         )
     for _, r in stale.iterrows():
         anomalies.append(
-            {"date": pd.Timestamp(r["date"]).date(), "kind": "stale_close", "value": int(r["value"]),
+            {"date": pd.Timestamp(r["date"]).date(), "kind": ANOMALY_KINDS[3], "value": int(r["value"]),
              "detail": f"连续 {int(r['value'])} 日收盘完全相同", "action": "保留，疑似停牌；不改值"}
         )
     for _, r in divs.iterrows():
         anomalies.append(
-            {"date": pd.Timestamp(r["date"]).date(), "kind": "dividend_event",
+            {"date": pd.Timestamp(r["date"]).date(), "kind": ANOMALY_KINDS[4],
              "value": round(float(r["value"]), 6), "detail": f"复权因子单日变化 {r['value']*100:.3f}%",
              "action": "正常事件（除息/拆分）"}
         )
     for _, r in drops.iterrows():
         anomalies.append(
-            {"date": pd.Timestamp(r["date"]).date(), "kind": "factor_drop",
+            {"date": pd.Timestamp(r["date"]).date(), "kind": ANOMALY_KINDS[5],
              "value": round(float(r["value"]), 6), "detail": f"复权因子下跳 {r['value']*100:.3f}%",
              "action": "需核查：上游可能回溯修改过历史"}
         )

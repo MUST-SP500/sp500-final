@@ -1,6 +1,6 @@
 # 复现日志（B1）
 
-> 生成时间：2026-11-23 12:49　|　由 `uv run python -m src.reproduce` 自动生成
+> 生成时间：2026-11-23 13:10　|　由 `uv run python -m src.reproduce` 自动生成
 
 ## 1. 环境
 
@@ -10,7 +10,7 @@
 | Python | 3.12.15（D:\MUSTLABS\Master_Class_YanYi_Shang\Open-source data tools\sp500-final\.venv\Scripts） |
 | uv | uv 0.13.9 (6b2d39dcc 2026-11-17 x86_64-pc-windows-msvc) |
 | 项目版本 | v0.1.0 |
-| git commit | 3959b44 |
+| git commit | 99334ad |
 | pandas / numpy | 2.3.3 / 2.5.5 |
 | 随机种子 | 42（config.yaml） |
 
@@ -32,12 +32,12 @@ uv run pytest                                         # 全部测试
 
 | 步骤 | 耗时 (s) | 产出 |
 |---|---|---|
-| download | 2.52 | 5 个标的（雅虎 3 + FRED 2） |
+| download | 2.34 | 5 个标的（雅虎 3 + FRED 2） |
 | clean | 0.06 | 复权 + 周频 + 面板 |
 | quality | 0.23 | 质量报告 + 异常清单 |
-| wiki | 0.37 | 当前成分表快照 |
+| wiki | 1.56 | 当前成分表快照 |
 | export | 0.06 | 面板导出 CSV 供核对 |
-| **合计** | **3.24** |  |
+| **合计** | **4.25** |  |
 
 - 周面板：1,566 行 × 12 列，1996-01-05 ~ 2025-12-31
 - 日面板：7,550 行 × 12 列

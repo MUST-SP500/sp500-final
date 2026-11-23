@@ -1,6 +1,7 @@
 # 数据字典（Data Dictionary）
 
 > 口径一旦冻结，改字段必须先改本文件 + 改测试，再改代码。
+> **逐个字段的含义查 `variable_descriptions.md`（变量说明总表）；本文件只讲口径、决策与实测结论。**
 
 ## `weekly_panel.parquet`
 

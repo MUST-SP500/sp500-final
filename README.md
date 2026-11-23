@@ -100,9 +100,10 @@ uv run python -m src.pipeline --stage clean      # 约 0.1 秒，复权 + 周频
 | 位置 | 内容 |
 |---|---|
 | `data/raw/` | 原始数据快照 + `manifest.json`（来源、下载时间、行数、校验和） |
-| `data/processed/` | `weekly_panel.parquet`（一行一周）、`splits.json`、`predictions.parquet` |
+| `data/processed/` | `weekly_panel.parquet`（一行一周）、`daily_panel.parquet`（日频）、`anomalies.csv`、`splits.json`、`predictions.parquet` |
 | `reports/figures/` | 所有图（EDA 7 张 + 回测 tearsheet） |
 | `reports/` | `metrics.csv`（所有数字的唯一来源）、`data_quality.md`、`eda_findings.md` |
+| `docs/` | **`variable_descriptions.md`（每个字段什么意思 → 只查这一个）**、`data_dictionary.md`、`decisions.md`、`reproduce_log.md` |
 | `output/` | 提交用：上面这些图与指标的副本（打包时放这里） |
 
 > 数据超过 50 MB 就不进压缩包，改成 README 写下载链接 + 附一个 `sample_data.csv`，
