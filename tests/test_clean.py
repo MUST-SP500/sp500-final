@@ -230,6 +230,38 @@ def test_build_panel_rejects_missing_raw_file(tmp_path):
         build_panel({}, raw_root=root, out_path=tmp_path / "w.parquet", daily_out_path=tmp_path / "d.parquet")
 
 
+def test_daily_panel_semantics_match_weekly(tmp_path):
+    """日/周两个面板的 open/high/low/close 必须是同一个口径（都是复权价）。"""
+    root = tmp_path / "raw"
+    _fake_raw(root)
+    weekly = build_panel({}, raw_root=root, out_path=tmp_path / "w.parquet", daily_out_path=tmp_path / "d.parquet")
+    daily = pd.read_parquet(tmp_path / "d.parquet")
+
+    assert list(daily.columns) == [
+        "date",
+        "f",
+        "open",
+        "high",
+        "low",
+        "close",
+        "adj_close",
+        "close_raw",
+        "volume",
+        "vix",
+        "dgs10",
+        "dtb3",
+    ]
+    # close 是复权价（与 adj_close 相等），close_raw 是原始价（更高）
+    assert (daily["close"] == daily["adj_close"]).all()
+    assert (daily["close_raw"] > daily["close"]).all()
+    assert (daily["f"] == daily["close"] / daily["close_raw"]).all()
+
+    # 周面板的 close 必须等于该周日频 close 的最后一天
+    merged = weekly.merge(daily[["date", "close"]], on="date", suffixes=("_w", "_d"))
+    assert len(merged) == len(weekly)
+    assert (merged["close_w"] == merged["close_d"]).all()
+
+
 def test_build_panel_detects_ohlc_violation(tmp_path):
     root = tmp_path / "raw"
     _fake_raw(root)

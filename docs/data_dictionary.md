@@ -23,9 +23,32 @@
 >
 > 本版不做美元指数（DXY）：它对周频择时的增量不明确，一周工期里不值得多一个数据源。
 
-## `daily_panel.parquet`（中间产物，给 B3 特征工程用）
+## `daily_panel.parquet`（中间产物，B3 特征工程用）
 
-日频、已复权、已对齐宏观，列：`date, f, open, high, low, close, adj_close, volume, vix, dgs10, dtb3`（11 列）。周面板由它聚合而来，两者同源，不要各算一套。
+日频、已复权、已对齐宏观，11 列：`date, f, open, high, low, close, adj_close, close_raw, volume, vix, dgs10, dtb3`
+
+### 两个面板同名不同义？—— 不，已经拉齐了
+
+| 列名 | `daily_panel` | `weekly_panel` | 含义 |
+|---|---|---|---|
+| `open/high/low/close` | 复权合成价 | 复权合成价 | **同一个口径**（周值由日值聚合，`close` 逐行相等） |
+| `adj_close` | 雅虎原始复权字段 | 周内最后一天的该字段 | 恒等于 `close`，**只用于对账**，不要拿它当第二个价格 |
+| `close_raw` | 未复权收盘（$62/股） | 无 | 仅日频有；`close_raw × f = close`，用来核对复权因子 |
+| `f` | 当日复权因子 | 无 | `f = adj_close / close_raw`，随分红阶梯下降（1996 年 0.589 → 2025 年 0.989） |
+
+**为什么 `close` 和 `adj_close` 长得一模一样**：`close` 是"用来算收益/特征的复权价"，`adj_close` 是"雅虎给的那个字符串换算过来的原值"。前者可以换实现（比如自算复权），后者是对账锚点。**特征一律用 `close`，`adj_close` 只出现在校验里。**
+
+> 历史坑：早期版本 `daily_panel` 的 `close` 是**未复权**价，`weekly_panel` 的 `close` 是**复权**价，同名不同义。已修正（2026-11-23），`daily_panel` 保留 `close_raw` 作为原始价出口。
+
+### 路线 A：特征在日频算，周频取样（已定，2026-11-23）
+
+`build_features()` 的输入是 **`daily_panel.parquet`**，不是周面板：
+
+1. 在日频算滚动特征（20/60 日均线偏离、20 日已实现波动、RSI、量比…）
+2. 按 ISO 周取**该周最后一个交易日**的行，与 `weekly_panel.date` 一一对齐
+3. 目标/回测在 `weekly_panel` 上做
+
+理由：周频只有 1,566 行，20 周均线会吃掉前两年样本；日频算完再取样不损失日内信息，也不用两套参数。**代价**：日频特征必须只用当日及以前的数据（B3 的防泄漏测试要覆盖这一点）。
 
 ## 口径说明（写进报告"数据"一节）
 

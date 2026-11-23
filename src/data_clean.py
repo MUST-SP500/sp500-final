@@ -38,7 +38,7 @@ WEEKLY_COLUMNS = [
     "n_trading_days",
     *MACRO_COLUMNS,
 ]
-DAILY_COLUMNS = ["date", "f", *PRICE_COLUMNS, *MACRO_COLUMNS]
+DAILY_COLUMNS = ["date", "f", "open", "high", "low", "close", "adj_close", "close_raw", "volume", *MACRO_COLUMNS]
 
 
 # --------------------------------------------------------------------------- #
@@ -174,8 +174,24 @@ def build_panel(
             raise FileNotFoundError(f"build_panel: 缺少原始文件 {path}（先跑 python -m src.pipeline --stage download）")
         daily[name] = _align_macro(_load_series(path, name), trading_days, name).to_numpy()
 
-    # 日频面板（给特征工程用；周面板是建模单位）
-    daily_panel = daily[DAILY_COLUMNS].copy()
+    # 日频面板（给特征工程用）。列名与周面板**同义**：
+    #   open/high/low/close = 复权合成价（和周面板一个口径）
+    #   adj_close           = 雅虎原始复权字段，恒等于 close，仅供对账
+    #   close_raw           = 未复权收盘（只在这里出现，用于核对复权因子）
+    daily_panel = pd.DataFrame(
+        {
+            "date": daily["date"],
+            "f": daily["f"],
+            "open": daily["open_adj"],
+            "high": daily["high_adj"],
+            "low": daily["low_adj"],
+            "close": daily["close_adj"],
+            "adj_close": daily["adj_close"],
+            "close_raw": daily["close"],
+            "volume": daily["volume"],
+            **{name: daily[name] for name in MACRO_COLUMNS},
+        }
+    )[DAILY_COLUMNS]
     daily_out_path.parent.mkdir(parents=True, exist_ok=True)
     daily_panel.to_parquet(daily_out_path, index=False)
 
