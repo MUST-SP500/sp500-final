@@ -30,8 +30,15 @@
 5. **VIX 滞后 1 日**：CBOE 收盘 16:15 ET，比股票收盘晚 15 分钟，不滞后即有 15 分钟隐性前视。
 6. **宏观发布滞后**：H.15 约 16:15 ET 发布，晚于股票收盘，至少滞后 1 个交易日。
 
-## 数据质量检查项（`src/validate.py` 已实现）
+## 原始数据快照与可复现性（`data/raw/`）
 
+- `data/raw/yahoo/{SPY,GSPC,VIX}.csv`、`data/raw/fred/{DTB3,DGS10}.csv` 是**下载当日的快照**：只读、不进 git（`.gitignore` 已排除）。文件名去掉 `^`（Windows 安全），`VIX.csv` 即 `^VIX`。
+- `data/raw/manifest.json` 逐个文件记 `url / retrieved_at / rows / date_range / sha256`，是"这份数据是哪天下的"的唯一凭据。
+- **`sha256` 是快照指纹，不是跨机一致性承诺**：雅虎的 `adj_close` 每次请求会被服务端重算复权因子，实测同一区间两次下载差异在 1e-4 量级，而 `open/high/low/close/volume` 逐字节相同。所以跨机核对口径是**行数 + 日期区间 + `close` 一致**，`adj_close` 允许 1e-4 漂移；报告里引用数据必须写明 `retrieved_at`。
+- 缓存规则：文件已覆盖请求区间（两端各留 7 天缓冲，应对元旦/周末等非交易日）即跳过下载；`SP500_REFRESH=1` 或 `download_all(..., refresh=True)` 强制重下。
+- FRED 序列的交易日比交易所少（H.15 假期不出数）：1996–2025 区间价格类 7,550 行，宏观类 7,505 行，属正常。
+
+## 数据质量检查项（`src/validate.py` 已实现）
 - [ ] 日期唯一、升序
 - [ ] OHLC 关系：`low <= min(open, close)`，`high >= max(open, close)`
 - [ ] 复权价格连续性、拆股/分红事件合理
