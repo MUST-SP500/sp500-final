@@ -69,12 +69,26 @@ uv run main.py --check
 | 全流程 | `uv run main.py` |
 | 只跑某一段 | `uv run main.py --stage clean` |
 | 跑测试 | `uv run pytest` |
+| 数据质量报告 + 异常清单 | `uv run python -m src.data_quality` |
+| 抓成分股快照 | `uv run python -m src.scrape_wiki` |
+| 导出面板 CSV（用 Excel 核对） | `uv run python -m src.export_csv` |
+| 一键复现 + 写复现日志 | `uv run python -m src.reproduce` |
+| 删数据从零重跑并比对 | `uv run python -m src.reproduce --full-rebuild` |
 | 开 notebook | `uv run jupyter lab` |
 | 装深度学习依赖（P5） | `uv sync --extra dl` |
 | 加一个依赖 | `uv add 包名`（会自动更新 pyproject 和 uv.lock） |
 | 改 Python 版本 | `uv python pin 3.12`（同时更新 `.python-version`） |
 
 阶段名：`download` `clean` `features` `labels` `splits` `models` `backtest` `report`。
+
+**B1 数据层只跑前两段**（其余段依赖 B2–B6）：
+
+```bash
+uv run python -m src.pipeline --stage download   # 约 3 秒，5 个标的
+uv run python -m src.pipeline --stage clean      # 约 0.1 秒，复权 + 周频 + 面板
+```
+
+预期结果：周面板 1,566 行 × 12 列（1996-01-05 ~ 2025-12-31，每年 52–53 周），日面板 7,550 行 × 12 列，零缺失。对不上就说明代码或数据版本不一致。完整记录见 `docs/reproduce_log.md`。
 
 **不要做的事**：不要 `pip install`，不要手动 `python -m venv`，不要把 `.venv/` 打包或提交。
 混用 pip 和 uv 会让 `uv.lock` 和实际环境对不上，老师那边复现就会失败。

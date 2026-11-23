@@ -39,6 +39,12 @@
 - **影响**：所有交付路径以说明书为准；`config.yaml` 补齐 5 个标的；`src/` 各模块 docstring 上的"对应计划 4.x"改为"对应说明书第 N 步"；**不影响**预注册口径与切分协议
 - **提出 / 确认**：G05 组内确认
 
+### 2026-11-23 · 成分股只抓当前快照，不抓历史变更（ADR-003）
+- **决定**：`src/scrape_wiki.py` 只抓 Wikipedia 的**当前成分表**（503 行 × 8 列），`fetch_changes()` / `to_turnover()` 明确抛 `NotImplementedError` 并注明原因
+- **理由**：实测该页只有当前成分表。"Selected changes" 历史变更表已不在本页（`pd.read_html` 只解析出 2 张表：成分表 + 导航框），要做需 Wayback Machine 逐月抓取；成分股数据只用于论证幸存者偏差，不进特征与回测，一周工期不值得
+- **影响**：报告只能写"当前 503 只、11 个板块分布 + 幸存者偏差说明"，**不能画年度换手图**（原交期里的 `eda_component_turnover.png` 取消，改为板块分布图）；`data/raw/wiki/constituents.csv` + manifest 条目可复现
+- **提出 / 确认**：G05 组内确认（2026-11-23）
+
 ---
 
 ## 待确认事项（组会解决）

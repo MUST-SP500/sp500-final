@@ -230,3 +230,22 @@ def test_manifest_restores_caret_symbol(tmp_path: Path):
 
     assert payload["files"][0]["ticker"] == "^VIX", "文件名去 ^ 但 manifest 里要还原"
     assert payload["files"][0]["file"] == "yahoo/VIX.csv"
+
+
+def test_write_manifest_keeps_other_sources(tmp_path):
+    """write_manifest 只重建 yahoo/fred，不能把 wiki 等别的条目抹掉。"""
+    import json
+
+    raw = tmp_path / "raw"
+    (raw / "yahoo").mkdir(parents=True)
+    (raw / "yahoo" / "SPY.csv").write_text("date,open,high,low,close,adj_close,volume\n2024-01-02,1,1,1,1,1,1\n", encoding="utf-8")
+    (raw / "manifest.json").write_text(
+        json.dumps({"generated_at": "x", "files": [{"file": "wiki/constituents.csv", "rows": 503}]}),
+        encoding="utf-8",
+    )
+
+    dd.write_manifest({}, raw_root=raw)
+    files = json.loads((raw / "manifest.json").read_text(encoding="utf-8"))["files"]
+    names = [f["file"] for f in files]
+    assert "yahoo/SPY.csv" in names
+    assert "wiki/constituents.csv" in names
