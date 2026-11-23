@@ -286,6 +286,16 @@ def write_manifest(cfg: dict, *, raw_root: str | Path | None = None) -> Path:
 
     payload = {"generated_at": retrieved_at, "files": rows}
     manifest_path = raw_root / "manifest.json"
+    # 保留别的模块登记的条目（如 wiki 成分股快照），否则每次重下都会把它们抹掉
+    if manifest_path.exists():
+        try:
+            previous = json.loads(manifest_path.read_text(encoding="utf-8")).get("files", [])
+        except (json.JSONDecodeError, OSError):
+            previous = []
+        covered = {row["file"] for row in rows}
+        payload["files"] += [
+            entry for entry in previous if entry.get("file") and entry["file"] not in covered
+        ]
     _unlock(manifest_path)
     manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest_path
