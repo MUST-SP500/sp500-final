@@ -1,0 +1,112 @@
+【G05】S&P500 项目 · 数据已就绪，请按下面步骤操作
+
+仓库：https://github.com/MUST-SP500/sp500-final
+（打不开 = 邀请还没接受，去邮箱点 GitHub 邀请链接，注意垃圾邮件）
+
+━━━━━━━━━━━━━━━━━━━━
+一、装 uv（只做一次）
+━━━━━━━━━━━━━━━━━━━━
+Windows 用 PowerShell（不是 CMD）：
+  powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+macOS / Linux：
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+
+装完关掉终端重开，输入 uv --version 有版本号就行。
+
+注意：不要用 pip install，也不要自己 python -m venv。依赖唯一真源是 pyproject.toml + uv.lock，混用会导致别人复现不了。
+
+━━━━━━━━━━━━━━━━━━━━
+二、拉代码
+━━━━━━━━━━━━━━━━━━━━
+第一次：
+  git clone https://github.com/MUST-SP500/sp500-final.git
+  cd sp500-final
+
+之前拉过的：
+  git switch main
+  git pull
+
+必须是最新 main。旧版只有原始数据，没有清洗好的面板。
+
+━━━━━━━━━━━━━━━━━━━━
+三、装依赖 + 生成数据（约 1-2 分钟 + 3 秒）
+━━━━━━━━━━━━━━━━━━━━
+  uv sync
+  uv run python -m src.pipeline --stage download
+  uv run python -m src.pipeline --stage clean
+
+数据文件不进 git，所以刚 clone 下来 data/processed 是空的，这两条必须跑。
+
+━━━━━━━━━━━━━━━━━━━━
+四、验收（三条硬指标，对不上别往下做）
+━━━━━━━━━━━━━━━━━━━━
+  uv run pytest
+预期：100 passed, 3 skipped
+（3 个 skip 是 B3/B6 还没写的占位，正常）
+
+  uv run python -c "import pandas as pd; w=pd.read_parquet('data/processed/weekly_panel.parquet'); print(w.shape, w.date.min().date(), w.date.max().date())"
+预期：(1566, 12) 1996-01-05 2025-12-31
+
+三条都要对上：1566 行、12 列、1996-01-05 ~ 2025-12-31，每年 52-53 周。
+对不上说明代码或数据版本不对，先在群里问，别硬做。
+
+━━━━━━━━━━━━━━━━━━━━
+五、数据在哪、字段什么意思
+━━━━━━━━━━━━━━━━━━━━
+  data/processed/weekly_panel.parquet   建模主表，一行=一周（1566 行 × 12 列）
+  data/processed/daily_panel.parquet    特征工程用，一行=一天（7550 行 × 12 列）
+  data/raw/manifest.json                数据是哪天下的、每个文件行数与 sha256
+  reports/data_quality.md               质量报告（缺失/极端值/除息/与 GSPC 对账）
+  docs/variable_descriptions.md         每个字段什么意思 — 只查这一个文件
+  docs/reproduce_log.md                 复现记录（环境、耗时、比对结果）
+
+两个常用命令：
+  uv run python -m src.export_csv        导出 CSV，用 Excel 看数据
+  uv run python -m src.reproduce --full-rebuild   从零重跑并校验（约 4 秒）
+
+━━━━━━━━━━━━━━━━━━━━
+六、两条必须遵守的口径
+━━━━━━━━━━━━━━━━━━━━
+1. 特征在 daily_panel 上算（20/60 日均线、20 日波动率、RSI 等），再按 ISO 周取该周最后一个交易日，与 weekly_panel.date 对齐。周频只有 1566 行，直接算 20 周均线会吃掉前两年样本。
+2. 不许自己复权、不许自己 resample('W-FRI')。口径唯一真源是 src/data_clean.py，要改先改 docs/variable_descriptions.md 和测试，再改代码。
+
+另外：weekly_panel 里没有 label_ret / label_up / next_ret 三列，这三个由 B3 的 src/labels.py 追加。
+
+━━━━━━━━━━━━━━━━━━━━
+七、推代码流程（不许直接推 main）
+━━━━━━━━━━━━━━━━━━━━
+  git switch main
+  git pull
+  git switch -c feat/b2-splits
+  ...写代码、写测试...
+  uv run pytest
+  git add src/splits.py tests/test_splits.py
+  git commit -m "feat(b2): 时间序列切分与防泄漏检查"
+  git push -u origin feat/b2-splits
+
+推完终端会打印 Create a pull request 链接，点开 → 填「改了什么 / 怎么验证」→ 右侧选一位 reviewer → Create pull request → CI 变绿 + Approve → Squash and merge → Delete branch。
+
+PR 标题格式：feat(b2): ... / fix(b3): ... / docs(b6): ...
+
+━━━━━━━━━━━━━━━━━━━━
+八、常见问题
+━━━━━━━━━━━━━━━━━━━━
+Q1 download 报 403 / 超时 / 连不上
+   雅虎和 FRED 在国内网络经常连不上，先开 VPN（TUN 模式最稳）再跑。实在不行找熊泽睿要三个文件：weekly_panel.parquet、daily_panel.parquet、manifest.json，放到对应路径就能用，不用跑 download。
+
+Q2 git push 报 fatal: could not read Username
+   Windows 凭据管理器里的 GitHub 登录失效。关掉终端重开，git push 会弹浏览器，登录一次就好。
+
+Q3 uv sync 报 lock 文件不一致
+   先 git pull 拿最新版本；还不行 git checkout -- uv.lock。不要手动编辑 uv.lock。
+
+Q4 pytest 不是 100 passed
+   先 git pull 确认在最新 main 上；还不行删掉 .venv 目录重新 uv sync。
+
+Q5 数据行数不是 1566
+   九成是代码版本旧了（git log -1 看 commit）。数据区间固定 1996-2025，行数不该变。
+
+━━━━━━━━━━━━━━━━━━━━
+分工：B1 数据（熊泽睿）；B2 切分；B3 特征与标签；B4 模型；B5 降维/深度学习；B6 回测与报告。
+函数级说明看仓库根目录 SP500_分工说明书_函数与数据示例.md
