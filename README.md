@@ -1,3 +1,5 @@
+> **B3 即用快照（2026-11-24）**：本次提交已按用户要求附带 `data/processed/` 中的 B1 输入面板和 B3 完整交付。拉取本分支（合并后为 main）即可读取 `model_panel.parquet`、`splits.json`、`validation_split.json`。运行 `uv sync --locked` 后可用 `uv run python -m src.b3` 离线重建 B3，无需重新下载行情。先读 [B3 交接说明](docs/b3_handoff.md)。下文涉及“数据不进 git”的旧约定，对本次明确列出的 B3 快照例外；其他运行期数据仍忽略。
+
 # sp500-final · S&P 500 周频择时
 
 > **课程**：数据科学开源工具 · Final Project
