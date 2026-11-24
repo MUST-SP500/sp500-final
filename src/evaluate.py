@@ -6,7 +6,7 @@
 本版口径（一周工期，指标是精简过的）：
   预测层  AUC / Balanced Accuracy / F1 / Brier
           回归：RMSE / MAE / Spearman IC / 方向准确率
-  策略层  CAGR / 年化波动 / Sharpe（超额）/ MaxDD（周频 + 日频）/ 年换手 / 平均仓位
+  策略层  CAGR / 年化波动 / Sharpe（超额）/ MaxDD（周频 + 日频）/ 年换手 / 交易次数 / 平均仓位
   统计    配对 bootstrap，给"策略 − 基准"的 Sharpe 差 95% CI
   工程    训练/推理耗时、吞吐、峰值内存 → reports/perf.csv
 
@@ -136,12 +136,17 @@ def strategy_metrics(
         max_dd_daily = np.nan
 
     if "traded" in trades.columns:
-        ann_turnover = float(pd.Series(trades["traded"], dtype=float).mean() * freq)
+        traded_s = pd.Series(trades["traded"], dtype=float)
+        ann_turnover = float(traded_s.mean() * freq)
+        n_trades = int((traded_s > 1e-12).sum())
     elif "position" in trades.columns:
         pos = pd.Series(trades["position"], dtype=float)
-        ann_turnover = float(pos.diff().abs().fillna(pos.abs()).mean() * freq)
+        traded_s = pos.diff().abs().fillna(pos.abs())
+        ann_turnover = float(traded_s.mean() * freq)
+        n_trades = int((traded_s > 1e-12).sum())
     else:
         ann_turnover = np.nan
+        n_trades = 0
 
     avg_pos = float(pd.Series(trades["position"], dtype=float).mean()) if "position" in trades.columns else np.nan
 
@@ -152,6 +157,7 @@ def strategy_metrics(
         "max_dd_weekly": max_dd_weekly,
         "max_dd_daily": max_dd_daily,
         "ann_turnover": ann_turnover,
+        "n_trades": n_trades,
         "avg_position": avg_pos,
     }
 

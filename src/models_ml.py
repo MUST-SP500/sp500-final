@@ -51,6 +51,65 @@ def _cash_return_series(df: pd.DataFrame) -> pd.Series:
     return bey * (days / 252.0)
 
 
+def _build_daily_equity(
+    bt: pd.DataFrame,
+    oos_panel: pd.DataFrame,
+    daily_panel: pd.DataFrame,
+    cost_bps: float,
+    initial_equity: float = 1.0,
+) -> pd.Series:
+    """将周频持仓按 execution_date–exit_date 展开到日频收盘，用于计算真实日频 MaxDD。"""
+    if "execution_date" not in oos_panel.columns or "exit_date" not in oos_panel.columns:
+        return pd.Series(dtype=float)
+
+    d = daily_panel.sort_values("date")
+    d_dates = pd.to_datetime(d["date"]).to_numpy()
+    d_open = d["open"].to_numpy(dtype=float)
+    d_close = d["close"].to_numpy(dtype=float)
+
+    exec_dates = pd.to_datetime(oos_panel["execution_date"]).to_numpy()
+    exit_dates = pd.to_datetime(oos_panel["exit_date"]).to_numpy()
+    positions = bt["position"].to_numpy(dtype=float)
+    traded = (
+        bt["traded"].to_numpy(dtype=float)
+        if "traded" in bt.columns
+        else np.zeros(len(bt), dtype=float)
+    )
+    prev_eq = bt["equity"].shift(1).fillna(initial_equity).to_numpy(dtype=float)
+    dtb3 = oos_panel["dtb3"].fillna(0.0).to_numpy(dtype=float) / 100.0
+    bey = (365.0 * dtb3) / (360.0 - 91.0 * dtb3)
+    cost_rate = float(cost_bps) / 10000.0
+
+    starts = np.searchsorted(d_dates, exec_dates, side="left")
+    ends = np.searchsorted(d_dates, exit_dates, side="left")
+
+    out_dates: list[np.ndarray] = []
+    out_eq: list[np.ndarray] = []
+    for i in range(len(bt)):
+        s_idx, e_idx = int(starts[i]), int(ends[i])
+        if s_idx >= e_idx or s_idx >= len(d_dates):
+            continue
+        entry_px = d_open[s_idx]
+        if not np.isfinite(entry_px) or entry_px <= 0.0:
+            continue
+        seg_close = d_close[s_idx:e_idx]
+        day_frac = np.arange(1, e_idx - s_idx + 1, dtype=float) / 252.0
+        asset_ret = seg_close / entry_px - 1.0
+        cash_ret = bey[i] * day_frac
+        gross = 1.0 + positions[i] * asset_ret + (1.0 - positions[i]) * cash_ret
+        eq_seg = prev_eq[i] * (1.0 - cost_rate * traded[i]) * gross
+        out_dates.append(d_dates[s_idx:e_idx])
+        out_eq.append(eq_seg)
+
+    if not out_dates:
+        return pd.Series(dtype=float)
+    return pd.Series(
+        np.concatenate(out_eq),
+        index=pd.DatetimeIndex(np.concatenate(out_dates)),
+        dtype=float,
+    )
+
+
 def _baseline_positions(panel: pd.DataFrame) -> dict[str, pd.Series]:
     """生成 4 条基线的目标仓位序列：买入持有、始终做多、恒定 60%、SMA200。"""
     idx = panel.index
@@ -80,6 +139,8 @@ def make_baselines(panel: pd.DataFrame, cfg: dict | None = None) -> pd.DataFrame
     bt_cfg = cfg["backtest"]
     rf = _cash_return_series(df)
     pos_map = _baseline_positions(df)
+    daily_path = project_path(cfg["data"]["daily_panel"])
+    daily_panel = pd.read_parquet(daily_path) if daily_path.exists() else None
 
     rows = []
     for name, pos in pos_map.items():
@@ -91,7 +152,18 @@ def make_baselines(panel: pd.DataFrame, cfg: dict | None = None) -> pd.DataFrame
             initial_position=float(bt_cfg["initial_position"]),
             initial_equity=float(bt_cfg["initial_equity"]),
         )
-        m = strategy_metrics(bt["equity"], bt, freq=52, rf_returns=rf)
+        daily_eq = (
+            _build_daily_equity(
+                bt,
+                df,
+                daily_panel,
+                cost_bps=float(bt_cfg["cost_bps"]),
+                initial_equity=float(bt_cfg["initial_equity"]),
+            )
+            if daily_panel is not None
+            else None
+        )
+        m = strategy_metrics(bt["equity"], bt, freq=52, rf_returns=rf, daily_equity=daily_eq)
         rows.append({"strategy": name, **m})
     return pd.DataFrame(rows)
 
@@ -392,6 +464,8 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
     bt_cfg = cfg["backtest"]
 
     panel = pd.read_parquet(project_path("data/processed/model_panel.parquet"))
+    daily_path = project_path(cfg["data"]["daily_panel"])
+    daily_panel = pd.read_parquet(daily_path) if daily_path.exists() else None
     folds = json.loads(project_path(cfg["data"]["splits"]).read_text(encoding="utf-8"))
     val_folds = json.loads(
         project_path("data/processed/validation_split.json").read_text(encoding="utf-8")
@@ -445,6 +519,7 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
     }
 
     bt_results: dict[str, pd.DataFrame] = {}
+    daily_equities: dict[str, pd.Series | None] = {}
     excess_returns: dict[str, pd.Series] = {}
     for s_name, pos in strategy_positions.items():
         bt = run_positions(
@@ -456,6 +531,17 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
             initial_equity=float(bt_cfg["initial_equity"]),
         )
         bt_results[s_name] = bt
+        daily_equities[s_name] = (
+            _build_daily_equity(
+                bt,
+                oos_panel,
+                daily_panel,
+                cost_bps=float(bt_cfg["cost_bps"]),
+                initial_equity=float(bt_cfg["initial_equity"]),
+            )
+            if daily_panel is not None
+            else None
+        )
         excess_returns[s_name] = bt["net_return"] - rf_oos
 
     # 4. 汇总预测层 + 策略层 + 配对 Bootstrap 95% CI
@@ -474,12 +560,33 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
         pred_dict["ridge"]["y_pred"],
     )
 
+    bh_sharpe = strategy_metrics(
+        bt_results["buy_and_hold"]["equity"],
+        bt_results["buy_and_hold"],
+        freq=52,
+        rf_returns=rf_oos,
+        daily_equity=daily_equities["buy_and_hold"],
+    )["sharpe"]
+    c60_sharpe = strategy_metrics(
+        bt_results["const_60"]["equity"],
+        bt_results["const_60"],
+        freq=52,
+        rf_returns=rf_oos,
+        daily_equity=daily_equities["const_60"],
+    )["sharpe"]
+
     result_rows: list[dict] = []
     bh_excess = excess_returns["buy_and_hold"]
     c60_excess = excess_returns["const_60"]
 
     for s_name, bt in bt_results.items():
-        sm = strategy_metrics(bt["equity"], bt, freq=52, rf_returns=rf_oos)
+        sm = strategy_metrics(
+            bt["equity"],
+            bt,
+            freq=52,
+            rf_returns=rf_oos,
+            daily_equity=daily_equities[s_name],
+        )
         row: dict = {"strategy": s_name, **sm}
 
         if s_name in ("logreg_R1", "logreg_R2"):
@@ -516,12 +623,7 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
             lo_bh, hi_bh = paired_bootstrap_diff(
                 excess_returns[s_name], bh_excess, block=8, n_boot=5000, seed=seed
             )
-            row["sharpe_diff_vs_bh"] = sm["sharpe"] - strategy_metrics(
-                bt_results["buy_and_hold"]["equity"],
-                bt_results["buy_and_hold"],
-                freq=52,
-                rf_returns=rf_oos,
-            )["sharpe"]
+            row["sharpe_diff_vs_bh"] = sm["sharpe"] - bh_sharpe
             row["sharpe_diff_vs_bh_ci_low"] = lo_bh
             row["sharpe_diff_vs_bh_ci_high"] = hi_bh
 
@@ -529,12 +631,7 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
             lo_60, hi_60 = paired_bootstrap_diff(
                 excess_returns[s_name], c60_excess, block=8, n_boot=5000, seed=seed
             )
-            row["sharpe_diff_vs_c60"] = sm["sharpe"] - strategy_metrics(
-                bt_results["const_60"]["equity"],
-                bt_results["const_60"],
-                freq=52,
-                rf_returns=rf_oos,
-            )["sharpe"]
+            row["sharpe_diff_vs_c60"] = sm["sharpe"] - c60_sharpe
             row["sharpe_diff_vs_c60_ci_low"] = lo_60
             row["sharpe_diff_vs_c60_ci_high"] = hi_60
 
@@ -550,7 +647,17 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
     print(f"  - {perf_path}")
     print(f"  - {hp_path}")
     print("\n=== 六线主对比 + RF（5 bps 单边成本）===")
-    cols = ["strategy", "cagr", "ann_vol", "sharpe", "max_dd_weekly", "ann_turnover", "avg_position"]
+    cols = [
+        "strategy",
+        "cagr",
+        "ann_vol",
+        "sharpe",
+        "max_dd_weekly",
+        "max_dd_daily",
+        "ann_turnover",
+        "n_trades",
+        "avg_position",
+    ]
     print(results_df[cols].to_string(index=False, float_format=lambda x: f"{x:.4f}"))
     print("\n=== 训练与推理性能（CPU）===")
     print(perf_df.to_string(index=False))
