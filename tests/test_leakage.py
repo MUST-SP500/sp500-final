@@ -71,26 +71,29 @@ def test_label_shift_convention_is_documented():
     assert r_oo > 0
 
 
-@pytest.mark.skip(reason="待 B3 实现 src.features 后启用：截断不变性")
 def test_features_truncation_invariance(ohlc):
     """把原始数据截到 t 重算特征，结果必须与全量计算在 t 处一致。"""
     from src.features import build_features
 
+    ohlc = ohlc.assign(vix=20.0, dgs10=4.0, dtb3=3.0)
     full = build_features(ohlc)
-    cut = ohlc.iloc[:-60]
+    cut = ohlc.iloc[:-7]
     truncated = build_features(cut)
 
     common = truncated.index.intersection(full.index)
     assert len(common) > 0
     pd.testing.assert_frame_equal(
-        full.loc[common].dropna(), truncated.loc[common].dropna(), check_like=True
+        full.loc[common], truncated.loc[common], check_like=True
     )
 
 
-@pytest.mark.skip(reason="待 B3 实现 src.labels 后启用：标签对齐")
 def test_label_uses_next_week_open_to_open(ohlc):
     from src.labels import build_labels
 
-    labels = build_labels(ohlc.set_index("date")["open"])
+    prices = pd.Series([100.0, 101.0, 102.0, 100.0], index=pd.to_datetime(["2024-01-05", "2024-01-12", "2024-01-19", "2024-01-26"]))
+    labels = build_labels(prices)
+    assert labels["label_ret"].iloc[0] == pytest.approx(np.log(102 / 101))
+    assert labels["next_ret"].iloc[1] == pytest.approx(100 / 102 - 1)
+    assert labels.tail(2).isna().all().all()
     assert {"label_ret", "label_up"}.issubset(labels.columns)
     assert labels["label_up"].dropna().isin([0, 1]).all()
