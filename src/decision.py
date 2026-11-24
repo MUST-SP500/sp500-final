@@ -13,17 +13,28 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 
 def rule_fixed(proba: pd.Series, threshold: float = 0.5) -> pd.Series:
     """R1：固定阈值。"""
-    raise NotImplementedError("B4：待实现（P4）")
+    s = pd.Series(proba, dtype=float)
+    pos = (s > threshold).astype(float)
+    pos[s.isna()] = np.nan
+    return pos
 
 
 def rule_quantile(proba: pd.Series, train_proba: pd.Series, q: float = 0.60) -> pd.Series:
     """R2：阈值取训练集预测概率的分位数。"""
-    raise NotImplementedError("B4：待实现（P4）")
+    s = pd.Series(proba, dtype=float)
+    tr = pd.Series(train_proba, dtype=float).dropna()
+    if tr.empty:
+        raise ValueError("train_proba 不可为空，无法计算分位数阈值")
+    threshold = float(np.quantile(tr.to_numpy(), q))
+    pos = (s > threshold).astype(float)
+    pos[s.isna()] = np.nan
+    return pos
 
 
 def rule_confidence(proba: pd.Series) -> pd.Series:
@@ -33,4 +44,10 @@ def rule_confidence(proba: pd.Series) -> pd.Series:
 
 def rule_kelly(mu: pd.Series, sigma: pd.Series, kappa: float) -> pd.Series:
     """R4：回归预测 + Kelly 缩放。"""
-    raise NotImplementedError("B4：待实现（P4）")
+    mu_s = pd.Series(mu, dtype=float)
+    sig_s = pd.Series(sigma, dtype=float).reindex(mu_s.index)
+    var = sig_s ** 2
+    raw = np.where((var > 0) & np.isfinite(var), (mu_s / var) * float(kappa), 0.0)
+    pos = pd.Series(np.clip(raw, 0.0, 1.0), index=mu_s.index, dtype=float)
+    pos[mu_s.isna() | sig_s.isna()] = np.nan
+    return pos
