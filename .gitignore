@@ -41,3 +41,22 @@ secrets.yaml
 # ---------- 日志 ----------
 *.log
 logs/
+
+# B3 交接快照：用户要求直接纳入 Git，其他运行期数据继续忽略
+!data/processed/b3_sample_counts.csv
+!data/processed/control_folds.csv
+!data/processed/control_predictions.csv
+!data/processed/control_summary.csv
+!data/processed/daily_panel.parquet
+!data/processed/feature_missingness.csv
+!data/processed/model_panel.csv
+!data/processed/model_panel.parquet
+!data/processed/preprocessing_checks.csv
+!data/processed/splits.json
+!data/processed/validation_split.json
+!data/processed/weekly_features.csv
+!data/processed/weekly_features.parquet
+!data/processed/weekly_labels.csv
+!data/processed/weekly_labels.parquet
+!data/processed/weekly_panel.parquet
+!data/processed/b3_snapshot_manifest.json

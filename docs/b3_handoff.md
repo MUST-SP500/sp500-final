@@ -8,12 +8,13 @@
 
 ```powershell
 uv sync --locked
-# 先准备好 B1 的 daily_panel.parquet 和 weekly_panel.parquet
+# B1 输入面板及 B3 交付已随本 PR 提交，可直接读取
+# 可选：从随附 B1 面板重新生成
 uv run python -m src.b3
 uv run pytest
 ```
 
-如果没有 B1 面板，运行 download/clean 或接收 P1 同一版本的两个面板。数据不进 git；只拉代码不会自动获得面板。B3 不重下载、不改写 B1 面板。
+经用户明确要求，本 PR 同时包含 B1 两个输入面板与完整 B3 数据快照，合并后拉取即可读取 model_panel.parquet 和 splits.json，无需重新下载。若需复现，可直接基于随附面板执行 src.b3；B3 不重下载、不改写 B1 面板。文件指纹见 data/processed/b3_snapshot_manifest.json；本地缺少 B1 原下载 manifest，故不声称原始数据来源审计已完成。
 
 `src.features`、`src.labels` 的旧入口保留；labels 入口已转到统一生成过程，防止覆盖完整交接表。对外推荐只用 `src.b3`，可传 `--config path.yaml`。
 
@@ -73,4 +74,4 @@ P5：PCA 必须在本折 X_train 上 fit；CNN/AE 需要 [0,1] 输入可用 `mak
 
 未决：P4/P5 正式模型、P6 回测与主流程仍由相应组员完成；B1 的 ^GSPC 交叉校验待补；预注册时间平移“策略失效”尚需正式回测验证。AUC 对照和单元测试不证明彻底排除供应商数据修订等所有偏差。
 
-提交时仅添加 src、tests、相关 docs/reports，不提交 data、.venv 或预测结果。开发分支为 feat/b3-features-labels-splits；合并前可拉取该分支使用，须 PR 审查合并后同学才能通过 main 获取。
+本次交接按用户明确要求，将 data/processed 的 B1/B3 快照作为仓库规则的例外提交；不提交 .venv、原始下载目录或密钥。control_* 文件只供泄漏对照，不是正式模型预测。开发分支为 feat/b3-features-labels-splits；合并前可拉取该分支使用，须 PR 审查合并后同学才能通过 main 获取。
