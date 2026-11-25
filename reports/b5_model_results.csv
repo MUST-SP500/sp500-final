@@ -1,0 +1,9 @@
+model,n_rows,auc
+cnn_standard,596,0.5341
+pca_7d_2008,7,0.5333
+cnn_minmax,596,0.5243
+dnn_standard,938,0.523
+lr_full,938,0.522
+pca_logreg,938,0.52
+autoencoder_6d_2008,6,0.5076
+full_22d_2008,22,0.4818

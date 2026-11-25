@@ -30,6 +30,7 @@ uv-cache/
 # ---------- 编辑器 / 系统 ----------
 .vscode/
 .idea/
+.workbuddy/
 .DS_Store
 Thumbs.db
 
@@ -60,3 +61,6 @@ logs/
 !data/processed/weekly_labels.parquet
 !data/processed/weekly_panel.parquet
 !data/processed/b3_snapshot_manifest.json
+
+# B5 交付物：P6 要拿去回测，必须进 Git
+!data/processed/predictions_dl.parquet
