@@ -254,7 +254,8 @@ def run_backtest(
     cfg : dict | None
         配置字典；None 时读仓库根目录的 config.yaml。
     out_dir : 路径 | None
-        三张表写到哪；默认 `data/processed`。
+        三张表写到哪；默认 `reports/`（README 第三节：metrics.csv 在 reports/，
+        报告全文的数字都从这里读）。
     write : bool
         是否真的落盘（测试里传 False 就只算不写）。
 
@@ -358,8 +359,9 @@ def run_backtest(
 
     if write:
         ensure_dirs()
+        report_cfg = cfg.get("report", {}) or {}
         target = Path(out_dir) if out_dir is not None else _resolve(
-            data_cfg.get("processed_dir", "data/processed")
+            report_cfg.get("tables_dir", "reports")
         )
         target.mkdir(parents=True, exist_ok=True)
         for table_name, frame in tables.items():
