@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-11-26T13:16:37+08:00",
+  "files": [
+    {
+      "ticker": "SPY",
+      "source": "yahoo",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY",
+      "retrieved_at": "2026-11-26T13:16:37+08:00",
+      "rows": 1,
+      "date_range": "2024-01-02 ~ 2024-01-02",
+      "sha256": "2bf785aa11d030f05ed0c477c78651e1ad85488e8784723e0032f00fff5fb70f",
+      "file": "yahoo/SPY.csv"
+    },
+    {
+      "file": "wiki/constituents.csv",
+      "rows": 503
+    }
+  ]
+}

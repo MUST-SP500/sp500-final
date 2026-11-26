@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-11-26T13:16:42+08:00",
+  "files": [
+    {
+      "ticker": "SP500_CONSTITUENTS",
+      "source": "wikipedia",
+      "url": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+      "retrieved_at": "2026-11-26T13:16:42+08:00",
+      "rows": 3,
+      "date_range": "snapshot",
+      "sha256": "27914c45dd4d31a564dfd62bab76666de69943ef00443c21ea25125468d06fd9",
+      "file": "wiki/constituents.csv"
+    }
+  ]
+}
