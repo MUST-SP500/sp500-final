@@ -122,14 +122,26 @@ def run_stage(stage: str, cfg: dict) -> None:
         except ModuleNotFoundError:
             print(f"[eda] 跳过：{OPTIONAL_STAGES['eda']} 还没合进 main")
             return
-        eda_main([])
+        try:
+            eda_main([])
+        except FileNotFoundError as exc:
+            print(
+                f"[eda] 跳过第 6 张图：{exc}。"
+                "先跑 `uv run python -m src.scrape_wiki` 生成成分股快照。"
+            )
     elif stage == "b5":
         try:
             from src.report_b5 import main as b5_main
         except ModuleNotFoundError:
             print(f"[b5] 跳过：{OPTIONAL_STAGES['b5']} 还没合进 main")
             return
-        b5_main()
+        try:
+            b5_main()
+        except ModuleNotFoundError as exc:
+            if "torch" in str(exc):
+                print("[b5] 跳过：深度学习结果表需要 torch，先 `uv sync --extra dl`（已有的 b5_*.csv 可直接用）")
+            else:
+                raise
     elif stage == "report":
         build_report(cfg)
     else:
