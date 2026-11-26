@@ -156,6 +156,7 @@ def build_report(cfg: dict) -> None:
     3. 生成 output/summary.md（一页结论，数字全部从 CSV 读，不手抄）
     4. 把表和图拷到 output/
     """
+    from src.build_site import build as build_site
     from src.sensitivity import build_sensitivity
     from src.tearsheet import build_tearsheet
 
@@ -169,6 +170,7 @@ def build_report(cfg: dict) -> None:
     metrics = pd.read_csv(metrics_path)
     build_tearsheet(cfg)
     sensitivity = build_sensitivity(cfg)
+    site_path = build_site(cfg)
 
     out = project_path("output")
     out.mkdir(parents=True, exist_ok=True)
@@ -195,6 +197,7 @@ def build_report(cfg: dict) -> None:
     if show:
         print(metrics[show].to_string(index=False, float_format=lambda x: f"{x:.4f}"))
     print(f"[report] 已写 output/summary.md；已拷 {len(copied)} 张表、{n_fig} 张图")
+    print(f"[report] 展示网页：{site_path}（双击即可打开）")
 
     missing = [name for name in ("metrics.csv", "equity_curve.csv", "trades.csv") if name not in copied]
     if missing:

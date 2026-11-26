@@ -1,2 +1,0 @@
-﻿strategy,cost_bps,n_weeks,start,end,total_return,cagr,ann_vol,sharpe,max_drawdown,annual_turnover,avg_position,exposure,n_trades,hit_rate
-logreg,5.0,4,2020-01-03,2020-01-24,0.08736731661387531,1.8730359908929688,0.680387561614702,1.824107420562794,-0.10089977499999991,37.800000000000004,0.75,0.75,3,0.5

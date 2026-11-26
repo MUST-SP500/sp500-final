@@ -68,3 +68,6 @@ logs/
 # 打包副本（由 pipeline --stage report 生成，不重复入库）
 output/*.csv
 output/figures/
+
+pytest-of-*/
+
