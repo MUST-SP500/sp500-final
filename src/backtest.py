@@ -193,7 +193,42 @@ def _normalise_predictions(predictions: pd.DataFrame) -> pd.DataFrame:
     if duplicated.any():
         dup = out.loc[duplicated, "decision_date"].iloc[0]
         raise ValueError(f"run_backtest: 同一策略在同一决策日有多行（例如 {dup.date()}）")
-    return out
+
+    # B4 把 R2 放在单独的 position_r2 列里，这里拆成一条独立策略
+    frames = [out]
+    if "position_r2" in out.columns:
+        r2 = out.copy()
+        r2["position"] = pd.to_numeric(r2["position_r2"], errors="coerce")
+        r2["strategy"] = out["strategy"].astype(str) + "_R2"
+        frames.append(r2.dropna(subset=["position"]))
+    return pd.concat(frames, ignore_index=True)
+
+
+# --------------------------------------------------------------------------- #
+# 基线：直接复用 P4 的仓位定义，避免两个人各写一套
+# --------------------------------------------------------------------------- #
+def baseline_positions(cfg: dict, panel: pd.DataFrame) -> dict[str, pd.Series]:
+    """买入持有 / 恒定 60% / SMA200 的仓位序列（口径由 B4 定义，这里只取不用重写）。
+
+    SMA200 需要 200 **日**均线，所以优先用 B3 的 `model_panel`（含 px_ma200）；
+    拿不到就退回周面板，并在输出里标注。
+    """
+    try:
+        from src.models_ml import _baseline_positions
+    except Exception as exc:  # pragma: no cover - 依赖别的模块
+        print(f"[backtest] 跳过三条基线：{exc}")
+        return {}
+
+    data_cfg = cfg.get("data", {}) or {}
+    source = panel
+    model_panel_path = _resolve(data_cfg.get("model_panel", "data/processed/model_panel.parquet"))
+    if model_panel_path.exists():
+        source = pd.read_parquet(model_panel_path)
+
+    if "date" in source.columns:
+        source = source.set_index("date")
+
+    return _baseline_positions(source)
 
 
 # --------------------------------------------------------------------------- #
@@ -237,12 +272,33 @@ def strategy_metrics(equity_curve: pd.DataFrame, holding_days: pd.Series) -> dic
 # --------------------------------------------------------------------------- #
 # 主函数
 # --------------------------------------------------------------------------- #
+def _collect_jobs(
+    pred: pd.DataFrame, cfg: dict, panel: pd.DataFrame, include_baselines: bool
+) -> list[tuple[str, pd.Series]]:
+    """把"模型预测"和"三条基线"统一成 [(策略名, 仓位序列)] 的列表。"""
+    jobs: list[tuple[str, pd.Series]] = []
+    for name, sub in pred.groupby("strategy", sort=True):
+        jobs.append((name, sub.set_index("decision_date")["position"].astype(float).sort_index()))
+
+    if include_baselines:
+        # 基线必须与模型用同一段样本外区间，否则年化/回撤不可比
+        low, high = pred["decision_date"].min(), pred["decision_date"].max()
+        for name, positions in baseline_positions(cfg, panel).items():
+            series = pd.Series(positions, dtype=float)
+            series.index = pd.to_datetime(series.index)
+            series = series[~series.index.duplicated(keep="last")].sort_index()
+            series = series[(series.index >= low) & (series.index <= high)]
+            jobs.append((name, series))
+    return jobs
+
+
 def run_backtest(
     predictions: pd.DataFrame | None = None,
     cfg: dict | None = None,
     *,
     out_dir: str | Path | None = None,
     write: bool = True,
+    include_baselines: bool = True,
 ) -> dict[str, pd.DataFrame]:
     """预测表 → 回测 → 三张表。
 
@@ -293,8 +349,7 @@ def run_backtest(
     trades: list[pd.DataFrame] = []
     rows: list[dict] = []
 
-    for name, sub in pred.groupby("strategy", sort=True):
-        positions = sub.set_index("decision_date")["position"].astype(float).sort_index()
+    for name, positions in _collect_jobs(pred, cfg, panel, include_baselines):
         if positions.index.has_duplicates:
             raise ValueError(f"run_backtest: 策略 {name} 的 decision_date 有重复")
         joined = hold.join(positions.rename("position"), how="inner")

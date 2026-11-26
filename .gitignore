@@ -60,3 +60,7 @@ logs/
 !data/processed/weekly_labels.parquet
 !data/processed/weekly_panel.parquet
 !data/processed/b3_snapshot_manifest.json
+
+# ---------- 打包副本（由 pipeline --stage report 生成，不重复入库）----------
+output/*.csv
+output/figures/

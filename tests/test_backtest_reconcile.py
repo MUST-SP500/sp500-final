@@ -125,7 +125,7 @@ def test_engine_reconciles_full_backtest(tmp_path):
         "backtest": {"cost_bps": 5.0, "initial_position": 0.0, "initial_equity": 1.0},
     }
 
-    result = run_backtest(predictions, cfg, out_dir=tmp_path)
+    result = run_backtest(predictions, cfg, out_dir=tmp_path, include_baselines=False)
 
     assert {"trades", "equity_curve", "metrics"}.issubset(result)
     eq = result["equity_curve"]
