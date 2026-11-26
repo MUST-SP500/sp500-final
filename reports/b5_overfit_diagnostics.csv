@@ -1,0 +1,3 @@
+model,params,fold,n_train,n_val,n_test,auc_train,auc_val,auc_test,gap_train_test,epochs_used
+dnn,3777,2008,465,105,52,0.6367,0.6259,0.4727,0.164,17
+cnn,2769,2008,446,86,33,0.706,0.5087,0.5731,0.1329,25
