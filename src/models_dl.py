@@ -208,7 +208,7 @@ def autoencoder_vs_pca(panel: pd.DataFrame, fold: dict, cfg: dict, bottleneck: i
     """
     from sklearn.linear_model import LogisticRegression
 
-    from src.models_pca import fit_pca
+    from src.models_pca import fit_pca, strategy_metrics
 
     feature_cols = feature_columns()
     seed = int(cfg["project"]["seed"])
@@ -234,13 +234,16 @@ def autoencoder_vs_pca(panel: pd.DataFrame, fold: dict, cfg: dict, bottleneck: i
     }
 
     rows = []
+    next_ret = test_rows["next_ret"].to_numpy() if "next_ret" in test_rows.columns else np.full(len(test_rows), np.nan)
     for name, (X_fit, X_pred) in variants.items():
         classifier = LogisticRegression(max_iter=1000, random_state=seed).fit(X_fit, y_core)
+        probability = classifier.predict_proba(X_pred)[:, 1]
         rows.append(
             {
                 "input": name,
                 "n_features": int(X_fit.shape[1]),
-                "auc": roc_auc_score(y_test, classifier.predict_proba(X_pred)[:, 1]),
+                "auc": roc_auc_score(y_test, probability),
+                **strategy_metrics((probability >= THRESHOLD).astype(int), next_ret),
                 "fold": fold["fold"],
             }
         )

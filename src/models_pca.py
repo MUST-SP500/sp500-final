@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 
+import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
@@ -98,6 +99,30 @@ def auc_table(predictions: pd.DataFrame) -> pd.DataFrame:
         for model_name, part in predictions.groupby("model", sort=False)
     ]
     return pd.DataFrame(rows)
+
+
+def strategy_metrics(position, next_ret) -> dict:
+    """把仓位序列变成"未扣成本"的年化收益与夏普，供 B5 各对比表统一口径。
+
+    next_ret 是对数收益（ln(O[t+2]/O[t+1])），空仓记 0 收益、不计现金利息；
+    正式回测（成本 / 日频 MaxDD / 现金收益）以 P6 的 run_backtest 为准。
+    """
+    pos = np.asarray(position, dtype=float)
+    ret = np.asarray(next_ret, dtype=float)
+    keep = ~np.isnan(ret)
+    strategy = pos[keep] * ret[keep]
+    n_weeks = len(strategy)
+    if n_weeks == 0:
+        return {"n_weeks": 0, "ann_return": np.nan, "sharpe": np.nan}
+
+    total = float(np.exp(strategy.sum()) - 1.0)
+    years = n_weeks / 52.0
+    sd = float(strategy.std(ddof=1))
+    return {
+        "n_weeks": n_weeks,
+        "ann_return": (1.0 + total) ** (1.0 / years) - 1.0,
+        "sharpe": float(strategy.mean() / sd * np.sqrt(52.0)) if sd > 0 else np.nan,
+    }
 
 
 def _fold_rows(panel: pd.DataFrame, fold: dict, feature_cols: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:

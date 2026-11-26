@@ -39,6 +39,7 @@ def panel() -> pd.DataFrame:
     frame = pd.DataFrame(features, index=dates, columns=FEATURE_COLS)
     frame["label_up"] = label_up
     frame["execution_date"] = dates + np.timedelta64(3, "D")
+    frame["next_ret"] = rng.normal(0.001, 0.02, len(dates))
     return frame
 
 
@@ -145,6 +146,9 @@ def test_autoencoder_vs_pca_single_fold(panel, folds):
     assert table["n_features"].tolist() == [5, table.loc[1, "n_features"], len(FEATURE_COLS)]
     assert table["auc"].between(0, 1).all()
     assert table["input"].str.startswith(("autoencoder_", "pca_", "full_")).all()
+    # 收益口径要和主表一致：2008 折 52 周，年化收益/夏普都要算出来
+    assert {"n_weeks", "ann_return", "sharpe"}.issubset(table.columns)
+    assert (table["n_weeks"] == len(folds[0]["test_dates"])).all()
 
 
 def test_run_dl_folds_dnn_matches_test_rows(panel, folds):

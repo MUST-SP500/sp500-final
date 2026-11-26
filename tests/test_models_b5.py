@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from src.features import feature_columns, make_preprocessor
-from src.models_pca import auc_table, fit_pca, pca_logreg
+from src.models_pca import auc_table, fit_pca, pca_logreg, strategy_metrics
 
 FEATURE_COLS = feature_columns()
 
@@ -93,3 +93,28 @@ def test_pca_predictions_match_b4_contract(panel, folds):
     ]
     assert set(predictions["position"].unique()) <= {0, 1}
     assert predictions["execution_date"].notna().all()
+
+
+def test_strategy_metrics_matches_manual_math():
+    """收益口径要能被手算复现：空仓不参与、收益按对数收益累乘。"""
+    position = np.array([1, 0, 1, 1], dtype=float)
+    next_ret = np.array([0.02, -0.01, 0.03, -0.02])
+
+    metrics = strategy_metrics(position, next_ret)
+
+    weekly = position * next_ret
+    expected_ann = np.exp(weekly.sum() * 52 / 4) - 1
+    expected_sharpe = weekly.mean() / weekly.std(ddof=1) * np.sqrt(52)
+    assert metrics["n_weeks"] == 4
+    assert metrics["ann_return"] == pytest.approx(expected_ann, rel=1e-9)
+    assert metrics["sharpe"] == pytest.approx(expected_sharpe, rel=1e-9)
+
+
+def test_strategy_metrics_handles_nan_and_flat_position():
+    """末尾缺 next_ret 的行要丢掉；全程空仓时夏普无定义，返回 NaN 而不是抛错。"""
+    metrics = strategy_metrics([1, 1, 1], [0.01, np.nan, 0.02])
+    assert metrics["n_weeks"] == 2
+
+    flat = strategy_metrics([0, 0, 0], [0.01, 0.02, -0.01])
+    assert flat["ann_return"] == pytest.approx(0.0)
+    assert np.isnan(flat["sharpe"])
