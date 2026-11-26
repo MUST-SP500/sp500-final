@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 from datetime import date
 import json
+from pathlib import Path
 import time
 import tracemalloc
 
@@ -355,6 +356,54 @@ def write_hyperparams_doc(records: list[dict], path) -> None:
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def read_frozen_hyperparams(path: str | Path) -> dict | None:
+    """从 `docs/hyperparams.md` 读回已冻结的选中值；读不全就返回 None（退回重选）。
+
+    对应分工说明书 P4 第 3 步：“这张表一旦写下来，后面任何人都不许改”。
+    没有这一步时，`run()` 每次都会重新选参，同一份数据重跑会得到不同的 C，
+    进而让报告里的年化/回撤漂移。
+    """
+    p = Path(path)
+    if not p.exists():
+        return None
+
+    selected: dict[str, float] = {}
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        model, param, value = cells[0], cells[1], cells[3]
+        try:
+            number = float(value)
+        except ValueError:  # 表头、分隔行
+            continue
+        if "logreg" in model and "C（" in param:
+            selected["C"] = number
+        elif "ridge" in model.lower() and "alpha" in param:
+            selected["alpha"] = number
+        elif "ridge" in model.lower() and "kappa" in param:
+            selected["kappa"] = number
+        elif model.strip() == "rf" and "max_depth" in param:
+            selected["max_depth"] = number
+
+    required = {"C", "alpha", "kappa", "max_depth"}
+    if not required.issubset(selected):
+        return None
+
+    return {
+        "logreg": {"C": selected["C"]},
+        "ridge": {"alpha": selected["alpha"], "kappa": selected["kappa"]},
+        "rf": {
+            "max_depth": int(selected["max_depth"]),
+            "n_estimators": 200,
+            "min_samples_leaf": 10,
+        },
+    }
+
+
 def walk_forward(
     panel: pd.DataFrame,
     folds: list[dict],
@@ -472,10 +521,17 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
     )
     val_fold = val_folds[0] if isinstance(val_folds, list) else val_folds
 
-    # 1. 2006–2007 一次性选参并写入 docs/hyperparams.md
-    frozen_params, hp_records = select_hyperparams(panel, val_fold, cfg)
+    # 1. 超参：默认读已冻结值，不重选（P4 第 3 步：写下来就不许改）。
+    #    只有首次运行（表不存在）或显式 --reselect 才会重新选参并覆盖该表。
     hp_path = project_path("docs/hyperparams.md")
-    write_hyperparams_doc(hp_records, hp_path)
+    reselect = bool((cfg.get("models") or {}).get("reselect_hyperparams", False))
+    frozen_params = None if reselect else read_frozen_hyperparams(hp_path)
+    if frozen_params is None:
+        frozen_params, hp_records = select_hyperparams(panel, val_fold, cfg)
+        write_hyperparams_doc(hp_records, hp_path)
+        print("[models] 重新选参并写入 docs/hyperparams.md（首次运行或显式要求重选）")
+    else:
+        print("[models] 使用 docs/hyperparams.md 中已冻结的超参，不再重选")
 
     # 2. 18 折滚动预测（logreg / ridge / rf）并记录耗时与内存
     perf_rows: list[dict] = []
@@ -668,8 +724,16 @@ def run(cfg: dict | None = None) -> dict[str, pd.DataFrame]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="B4 传统机器学习建模与评测入口")
     parser.add_argument("--config", default=None, help="配置文件路径")
+    parser.add_argument(
+        "--reselect",
+        action="store_true",
+        help="强制重新选参并覆盖 docs/hyperparams.md（默认读已冻结值，不重选）",
+    )
     args = parser.parse_args()
-    run(load_config(args.config))
+    cfg = load_config(args.config)
+    if args.reselect:
+        cfg["models"] = dict(cfg.get("models") or {}, reselect_hyperparams=True)
+    run(cfg)
 
 
 if __name__ == "__main__":
