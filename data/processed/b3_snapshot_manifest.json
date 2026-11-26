@@ -1,0 +1,88 @@
+{
+  "description": "B1 input panels and B3 handoff snapshot; authorized by user for direct repository delivery",
+  "snapshot_date": "2026-11-24",
+  "source_manifest_available": false,
+  "notes": "Original B1 raw manifest not present locally. Hashes identify these exact files, not original download provenance. control_* are leakage experiments, not formal strategy predictions.",
+  "files": [
+    {
+      "file": "b3_sample_counts.csv",
+      "bytes": 509,
+      "sha256": "eaec8ea76a156ae00e0a17121e5e1cd3ce5a4506c98802d5463b0d710a4e65c8"
+    },
+    {
+      "file": "control_folds.csv",
+      "bytes": 2557,
+      "sha256": "c9e48d92c99c6f9ece557020aca37d5ece7f77fd18554335a94ac8a92df1e03b"
+    },
+    {
+      "file": "control_predictions.csv",
+      "bytes": 160957,
+      "sha256": "b9b2e662e04546f7a695fa1781c5471078a0fcba172a15fadbcbcb5f1bb49562"
+    },
+    {
+      "file": "control_summary.csv",
+      "bytes": 165,
+      "sha256": "5ddd0d0af94e9dd9da17284d90a4faa86f2fc4c841ec8f6d061e311cfb923ba1"
+    },
+    {
+      "file": "daily_panel.parquet",
+      "bytes": 617244,
+      "sha256": "609348e9338568863e391b4b19e30b2b0999d0f9bbfc83d7ee57861881682703"
+    },
+    {
+      "file": "feature_missingness.csv",
+      "bytes": 659,
+      "sha256": "77a6f7e974ba6ef69d5859d2fe0d6d77dfe104fb9d7ae6d3a10dd4b2fd433f72"
+    },
+    {
+      "file": "model_panel.csv",
+      "bytes": 1042782,
+      "sha256": "0c4989d84610ed91d71db7de0d6cbf028d07d479e053e265901c086476351dca"
+    },
+    {
+      "file": "model_panel.parquet",
+      "bytes": 492388,
+      "sha256": "03a3b2dc66764d838b8cb751afb3e8e2367601250d28eeeff504d47865bde3db"
+    },
+    {
+      "file": "preprocessing_checks.csv",
+      "bytes": 537,
+      "sha256": "fc13d1bdee9dcb505b95ec64ec1a5c1dff6cc53a9878836a888a1cb843c71015"
+    },
+    {
+      "file": "splits.json",
+      "bytes": 427646,
+      "sha256": "441ede7acda8562df131073a363163133173e99fbc60996bc92b92c65dd6bfd5"
+    },
+    {
+      "file": "validation_split.json",
+      "bytes": 13356,
+      "sha256": "a721663ad6e7b973f755f1dc5d56d1b0769f77e6c29ff70607e0c63d9e4218b3"
+    },
+    {
+      "file": "weekly_features.csv",
+      "bytes": 698430,
+      "sha256": "7f3fbe458e5c1b9fb07737d824014d36c347d3ff6ab7756d40af08e139199e09"
+    },
+    {
+      "file": "weekly_features.parquet",
+      "bytes": 320007,
+      "sha256": "abb779fb943faac8176be6aa6e88ed7870d79799c1632524dfddcdafdb976c2b"
+    },
+    {
+      "file": "weekly_labels.csv",
+      "bytes": 88449,
+      "sha256": "699b03de29f9342ad84ad4d332095e0d9d38340c62d9f3220812e48715a19086"
+    },
+    {
+      "file": "weekly_labels.parquet",
+      "bytes": 47170,
+      "sha256": "e392e66e3878cb02ee0b2d62c72e940609ac959df98096bae669703e6a57e3e2"
+    },
+    {
+      "file": "weekly_panel.parquet",
+      "bytes": 124393,
+      "sha256": "89cbb9c23b4d745965c0ebcdb5b53601498f9298052440f46970a903c0c4868e"
+    }
+  ]
+}
