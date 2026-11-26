@@ -89,9 +89,85 @@ def test_zero_cost_equals_gross():
     np.testing.assert_allclose(out["net_return"], out["gross_return"])
 
 
-@pytest.mark.skip(reason="待 B6 实现 src.backtest.run_backtest 后启用：端到端对账")
-def test_engine_reconciles_full_backtest():
+def _toy_panel(opens: list[float]) -> pd.DataFrame:
+    """造一个只有 4 列（回测需要的最小集合）的周面板。"""
+    return pd.DataFrame(
+        {
+            "date": pd.date_range("2020-01-03", periods=len(opens), freq="W-FRI"),
+            "open": opens,
+            "dtb3": 0.0,
+            "n_trading_days": 5,
+        }
+    )
+
+
+def test_engine_reconciles_full_backtest(tmp_path):
+    """端到端：预测表 → 三张表，且净值与手算一致。
+
+    open 序列 [100, 100, 110, 121, 121, 108.9] 意味着
+    R = [+10%, +10%, 0%, -10%]（open-to-open，执行在下一周开盘）。
+    """
     from src.backtest import run_backtest
 
-    result = run_backtest(pd.DataFrame(), {})
+    panel = _toy_panel([100.0, 100.0, 110.0, 121.0, 121.0, 108.9])
+    panel_path = tmp_path / "weekly_panel.parquet"
+    panel.to_parquet(panel_path, index=False)
+
+    predictions = pd.DataFrame(
+        {
+            "decision_date": panel["date"].iloc[:4],
+            "position": [1.0, 1.0, 0.0, 1.0],
+            "model": "logreg",
+        }
+    )
+    cfg = {
+        "data": {"weekly_panel": str(panel_path), "processed_dir": str(tmp_path)},
+        "backtest": {"cost_bps": 5.0, "initial_position": 0.0, "initial_equity": 1.0},
+    }
+
+    result = run_backtest(predictions, cfg, out_dir=tmp_path, include_baselines=False)
+
     assert {"trades", "equity_curve", "metrics"}.issubset(result)
+    eq = result["equity_curve"]
+    assert len(eq) == 4
+    # 第一周：建仓扣 5bps，然后吃 +10%
+    assert eq["equity"].iloc[0] == pytest.approx(1.10 * 0.9995, rel=1e-12)
+    # 第二周：持有不动，不收费
+    assert eq["equity"].iloc[1] == pytest.approx(1.10 * 0.9995 * 1.10, rel=1e-12)
+    # 第三周：平仓，资产收益 0%，只扣成本
+    assert eq["equity"].iloc[2] == pytest.approx(1.10 * 0.9995 * 1.10 * 0.9995, rel=1e-12)
+    assert eq["drawdown"].max() <= 0
+
+    assert len(result["trades"]) == 3
+    assert len(result["metrics"]) == 1
+    assert (tmp_path / "metrics.csv").exists()
+    assert (tmp_path / "equity_curve.csv").exists()
+    assert (tmp_path / "trades.csv").exists()
+
+
+def test_bond_equivalent_yield_conversion():
+    """DTB3 贴现率 → 债券等价收益率：d=5% 应该略大于 5%。"""
+    from src.backtest import bond_equivalent_yield
+
+    bey = bond_equivalent_yield(pd.Series([5.0])).iloc[0]
+    assert bey == pytest.approx(0.05 / (1 - 0.05 * 91 / 360), rel=1e-12)
+    assert bey > 0.05
+
+
+def test_cash_return_scales_with_trading_days():
+    """假期周（4 天）的利息应该比完整周（5 天）少 20%。"""
+    from src.backtest import weekly_cash_returns
+
+    cash = weekly_cash_returns(pd.Series([5.0, 5.0]), pd.Series([5, 4]))
+    assert cash.iloc[1] == pytest.approx(cash.iloc[0] * 4 / 5, rel=1e-12)
+
+
+def test_short_position_rejected():
+    """本版不做空：position < 0 必须直接报错，而不是悄悄算错。"""
+    from src.backtest import run_backtest
+
+    predictions = pd.DataFrame(
+        {"decision_date": pd.to_datetime(["2020-01-03"]), "position": [-0.5]}
+    )
+    with pytest.raises(ValueError, match="不允许做空"):
+        run_backtest(predictions, {"data": {}, "backtest": {}}, write=False)

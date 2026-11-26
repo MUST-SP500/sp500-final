@@ -64,3 +64,12 @@ logs/
 
 # B5 交付物：P6 要拿去回测，必须进 Git
 !data/processed/predictions_dl.parquet
+
+# 打包副本（由 pipeline --stage report 生成，不重复入库）
+output/*.csv
+output/figures/
+
+pytest-of-*/
+
+output/summary.md
+

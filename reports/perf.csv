@@ -1,4 +1,4 @@
 model,train_sec_per_fold,predict_ms_per_fold,throughput_rows_per_sec,peak_memory_mb,n_params,device
-logreg,0.0429,0.443,117633.8,0.333,23,CPU
-ridge,0.0019,0.2971,175392.7,0.328,23,CPU
-rf,1.3241,26.4739,1968.4,0.495,—,CPU
+logreg,0.0205,0.343,151920.1,0.333,23,CPU
+ridge,0.0015,0.2114,246517.7,0.328,23,CPU
+rf,1.025,25.3231,2057.8,0.497,—,CPU
