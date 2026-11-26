@@ -30,6 +30,7 @@ uv-cache/
 # ---------- ç¼–è¾‘å™¨ / ç³»ç»Ÿ ----------
 .vscode/
 .idea/
+.workbuddy/
 .DS_Store
 Thumbs.db
 
@@ -61,6 +62,9 @@ logs/
 !data/processed/weekly_panel.parquet
 !data/processed/b3_snapshot_manifest.json
 
-# ---------- ´ò°ü¸±±¾£¨ÓÉ pipeline --stage report Éú³É£¬²»ÖØ¸´Èë¿â£©----------
+# B5 äº¤ä»˜ç‰©ï¼šP6 è¦æ‹¿å»å›æµ‹ï¼Œå¿…é¡»è¿› Git
+!data/processed/predictions_dl.parquet
+
+# æ‰“åŒ…å‰¯æœ¬ï¼ˆç”± pipeline --stage report ç”Ÿæˆï¼Œä¸é‡å¤å…¥åº“ï¼‰
 output/*.csv
 output/figures/

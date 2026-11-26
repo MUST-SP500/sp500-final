@@ -1,0 +1,6 @@
+model,n_features,n_rows,n_weeks,ann_return,sharpe,auc
+cnn_standard,22,596,596,0.1321,0.7692,0.5341
+cnn_minmax,22,596,596,0.0405,0.2828,0.5243
+dnn_standard,22,938,938,0.0933,0.5681,0.523
+lr_full,22,938,938,0.0808,0.4978,0.522
+pca_logreg,7,938,938,0.1211,0.6539,0.52

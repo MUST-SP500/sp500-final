@@ -1,0 +1,4 @@
+input,n_features,auc,n_weeks,ann_return,sharpe,fold
+pca_7d,7,0.5333,52,-0.1654,-0.5768,2008
+autoencoder_6d,6,0.5076,52,-0.2256,-0.7772,2008
+full_22d,22,0.4818,52,-0.1555,-0.6177,2008
