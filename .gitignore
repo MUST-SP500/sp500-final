@@ -71,3 +71,5 @@ output/figures/
 
 pytest-of-*/
 
+output/summary.md
+
